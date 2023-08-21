@@ -14,5 +14,5 @@ especially for a [daemonized music player](https://github.com/haolian9/cricket.n
 
 
 ## usage
-* .acquire/release(token) # the token can be arbitrary string but must be unique
-* .tokens() # returning all the tokens that are still being held
+* .acquire/release(token) # the token is an arbitrary but unique string
+* .tokens() # returning tokens being held

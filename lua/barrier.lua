@@ -1,7 +1,7 @@
---a dedicated modified buffer to prevent `:qa` for
+--possess a modified buffer to abort `:qa` for:
 --* daemon but non-detached processes
 --
---but this wont work with `:qa!`
+--and of course it wont stop `:qa!`
 
 local M = {}
 
@@ -10,11 +10,10 @@ local dictlib = require("infra.dictlib")
 local Ephemeral = require("infra.Ephemeral")
 local prefer = require("infra.prefer")
 
-local bo
+local bufnr
 do
-  local bufnr = Ephemeral({ buftype = "" })
-  bufrename(bufnr, "sema://quit")
-  bo = prefer.buf(bufnr)
+  bufnr = Ephemeral({ buftype = "" })
+  bufrename(bufnr, "barrier://quit")
 end
 
 local tokens = {}
@@ -25,7 +24,7 @@ function M.acquire(token)
   assert(tokens[token] == nil, "no re-entrance")
   tokens[token] = true
   count = count + 1
-  bo.modified = true
+  prefer.bo(bufnr, "modified", true)
 end
 
 ---@param token string
@@ -34,7 +33,7 @@ function M.release(token)
   tokens[token] = nil
   count = count - 1
   assert(count >= 0)
-  if count == 0 then bo.modified = false end
+  if count == 0 then prefer.bo(bufnr, "modified", false) end
 end
 
 ---@return string[]
