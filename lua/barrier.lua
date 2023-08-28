@@ -4,6 +4,7 @@
 --some other impl notes:
 --* of course it wont stop `:qa!`
 --* it wont hurt `:wa`
+--* i found no easy way to survive from `:q!`
 
 local M = {}
 
@@ -15,7 +16,7 @@ local api = vim.api
 
 local bufnr
 do
-  bufnr = Ephemeral({ buftype = "acwrite", name = "barrier://quit" })
+  bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" })
   api.nvim_create_autocmd("bufwritecmd", { buffer = bufnr, callback = function() end })
 end
 
