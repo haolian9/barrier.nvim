@@ -4,43 +4,80 @@
 --some other impl notes:
 --* of course it wont stop `:qa!`
 --* it wont hurt `:wa`
---* i found no easy way to survive from `:q!`
+--* it stops `:q!`
 
 local M = {}
 
-local dictlib = require("infra.dictlib")
+local Augroup = require("infra.Augroup")
+local ctx = require("infra.ctx")
 local Ephemeral = require("infra.Ephemeral")
 local prefer = require("infra.prefer")
 
 local api = vim.api
 
-local bufnr
-do
-  bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" })
-  api.nvim_create_autocmd("bufwritecmd", { buffer = bufnr, callback = function() end })
-end
-
+---@type {[string]: true}
 local tokens = {}
 local count = 0
+
+local barrier = {}
+do
+  ---@private
+  barrier.bufnr = nil
+
+  local function get_lines()
+    local lines = { "barriers:" }
+    for token in pairs(tokens) do
+      table.insert(lines, "* " .. token)
+    end
+    if #lines == 1 then return {} end
+    return lines
+  end
+
+  function barrier.refresh()
+    ctx.modifiable(barrier.bufnr, function() api.nvim_buf_set_lines(barrier.bufnr, 0, -1, false, get_lines()) end)
+    prefer.bo(barrier.bufnr, "modified", count > 0)
+  end
+
+  local function protect_the_buf()
+    barrier.bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" }, get_lines())
+
+    local aug = Augroup.buf(barrier.bufnr)
+    aug:repeats("bufwritecmd", { callback = function() end })
+    --workaround for `:q!`
+    aug:once("bufunload", {
+      nested = true,
+      callback = function()
+        vim.schedule(function() api.nvim_buf_delete(barrier.bufnr, { force = true }) end)
+      end,
+    })
+    --workaround for `:bw!`
+    aug:once("bufwipeout", {
+      callback = function()
+        aug:unlink()
+        vim.schedule(protect_the_buf)
+      end,
+    })
+  end
+
+  protect_the_buf()
+end
 
 ---@param token string
 function M.acquire(token)
   assert(tokens[token] == nil, "no re-entrance")
   tokens[token] = true
   count = count + 1
-  prefer.bo(bufnr, "modified", true)
+
+  barrier.refresh()
 end
 
 ---@param token string
 function M.release(token)
-  assert(tokens[token], "invalid token")
+  assert(tokens[token], "not an acquired token")
   tokens[token] = nil
   count = count - 1
-  assert(count >= 0)
-  if count == 0 then prefer.bo(bufnr, "modified", false) end
-end
 
----@return string[]
-function M.tokens() return dictlib.keys(tokens) end
+  barrier.refresh()
+end
 
 return M
