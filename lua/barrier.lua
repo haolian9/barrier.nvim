@@ -1,8 +1,8 @@
 --possess a modified buffer to abort `:qa` for:
 --* daemon but non-detached processes
 --
---some other impl notes:
---* of course it wont stop `:qa!`
+--some impl notes:
+--* of course it wont stop `:qa!`, `:%bw!`
 --* it wont hurt `:wa`
 --* it stops `:q!`
 
@@ -42,16 +42,16 @@ do
     barrier.bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" }, get_lines())
 
     local aug = Augroup.buf(barrier.bufnr)
-    aug:repeats("bufwritecmd", { callback = function() end })
+    aug:repeats("BufWriteCmd", { callback = function() end })
     --workaround for `:q!`
-    aug:once("bufunload", {
+    aug:once("BufUnload", {
       nested = true,
       callback = function()
         vim.schedule(function() api.nvim_buf_delete(barrier.bufnr, { force = true }) end)
       end,
     })
     --workaround for `:bw!`
-    aug:once("bufwipeout", {
+    aug:once("BufWipeout", {
       callback = function()
         aug:unlink()
         vim.schedule(protect_the_buf)
