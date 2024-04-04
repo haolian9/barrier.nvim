@@ -8,7 +8,7 @@
 
 local M = {}
 
-local Augroup = require("infra.Augroup")
+local augroups = require("infra.augroups")
 local ctx = require("infra.ctx")
 local Ephemeral = require("infra.Ephemeral")
 local prefer = require("infra.prefer")
@@ -41,7 +41,7 @@ do
   local function protect_the_buf()
     barrier.bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" }, get_lines())
 
-    local aug = Augroup.buf(barrier.bufnr)
+    local aug = augroups.BufAugroup(barrier.bufnr, --[[autounlink]] false)
     aug:repeats("BufWriteCmd", { callback = function() end })
     --workaround for `:q!`
     aug:once("BufUnload", {
