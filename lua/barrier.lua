@@ -9,6 +9,7 @@
 local M = {}
 
 local augroups = require("infra.augroups")
+local buflines = require("infra.buflines")
 local ctx = require("infra.ctx")
 local Ephemeral = require("infra.Ephemeral")
 local prefer = require("infra.prefer")
@@ -34,7 +35,7 @@ do
   end
 
   function barrier.refresh()
-    ctx.modifiable(barrier.bufnr, function() api.nvim_buf_set_lines(barrier.bufnr, 0, -1, false, get_lines()) end)
+    ctx.modifiable(barrier.bufnr, function() buflines.replaces_all(barrier.bufnr, get_lines()) end)
     prefer.bo(barrier.bufnr, "modified", count > 0)
   end
 
