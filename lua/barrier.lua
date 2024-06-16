@@ -12,9 +12,8 @@ local augroups = require("infra.augroups")
 local buflines = require("infra.buflines")
 local ctx = require("infra.ctx")
 local Ephemeral = require("infra.Ephemeral")
+local ni = require("infra.ni")
 local prefer = require("infra.prefer")
-
-local api = vim.api
 
 ---@type {[string]: true}
 local tokens = {}
@@ -48,7 +47,7 @@ do
     aug:once("BufUnload", {
       nested = true,
       callback = function()
-        vim.schedule(function() api.nvim_buf_delete(barrier.bufnr, { force = true }) end)
+        vim.schedule(function() ni.buf_delete(barrier.bufnr, { force = true }) end)
       end,
     })
     --workaround for `:bw!`
