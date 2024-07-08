@@ -41,7 +41,7 @@ do
   local function protect_the_buf()
     barrier.bufnr = Ephemeral({ buftype = "acwrite", bufhidden = "hide", name = "barrier://quit" }, get_lines())
 
-    local aug = augroups.BufAugroup(barrier.bufnr, --[[autounlink]] false)
+    local aug = augroups.BufAugroup(barrier.bufnr, "infra.barrier", false)
     aug:repeats("BufWriteCmd", { callback = function() end })
     --workaround for `:q!`
     aug:once("BufUnload", {
